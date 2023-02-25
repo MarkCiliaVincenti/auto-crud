@@ -7,31 +7,21 @@ namespace Firebend.AutoCrud.Core.Threading
 {
     public static class AsyncDuplicateLock
     {
-        private static readonly AsyncKeyedLocker KeyedLocker = new(o =>
+        private static readonly AsyncKeyedLocker<string> KeyedLocker = new(o =>
         {
             o.PoolSize = 20;
             o.PoolInitialFill = 1;
         });
 
-        public static IDisposable Lock(object key) => KeyedLocker.Lock(key);
+        public static IDisposable Lock(string key) => KeyedLocker.Lock(key);
 
-        public static ValueTask<IDisposable> LockAsync(object key)
-        {
-            return KeyedLocker.LockAsync(key);
-        }
+        public static ValueTask<IDisposable> LockAsync(string key)
+            => KeyedLocker.LockAsync(key);
 
-        public static ValueTask<IDisposable> LockAsync(object key, CancellationToken cancellationToken)
-        {
-            return KeyedLocker.LockAsync(key, cancellationToken);
-        }
+        public static ValueTask<IDisposable> LockAsync(string key, CancellationToken cancellationToken)
+            => KeyedLocker.LockAsync(key, cancellationToken);
 
-        public static async ValueTask<IDisposable> LockAsync(object key, CancellationToken cancellationToken = default, TimeSpan? timeout = null)
-        {
-            if (timeout.HasValue)
-            {
-                return await KeyedLocker.LockAsync(key, timeout.Value, cancellationToken).ConfigureAwait(false);
-            }
-            return await KeyedLocker.LockAsync(key, cancellationToken).ConfigureAwait(false);
-        }
+        public static async ValueTask<AsyncKeyedLockTimeoutReleaser<string>> LockAsync(string key, TimeSpan timeout, CancellationToken cancellationToken = default)
+            => await KeyedLocker.LockAsync(key, timeout, cancellationToken).ConfigureAwait(false);
     }
 }
